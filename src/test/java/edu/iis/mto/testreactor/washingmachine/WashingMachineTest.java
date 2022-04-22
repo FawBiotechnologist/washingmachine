@@ -17,31 +17,53 @@ class WashingMachineTest {
     private Engine engine;
     @Mock
     private WaterPump waterPump;
-    private WashingMachine washingMashine;
+    private WashingMachine washingMachine;
+    private LaundryBatch properLaundryBatch;
+    private Program nonAutoDetectProgram;
+    private Material irrelevantMaterialType;
+    private double anyProperWeightInKg;
+    private ProgramConfiguration nonAutoDetectProgramConfigurationWithSpin;
+    private LaundryStatus successWithNoErrors;
 
     @BeforeEach
     void setUp() throws Exception {
-        washingMashine = new WashingMachine(dirtDetector, engine, waterPump);
+        washingMachine = new WashingMachine(dirtDetector, engine, waterPump);
+        anyProperWeightInKg = 2d;
+        irrelevantMaterialType = Material.JEANS;
+        nonAutoDetectProgram = Program.SHORT;
+        properLaundryBatch = properLaundryBatchCreator();
+        nonAutoDetectProgramConfigurationWithSpin = getNonAutoDetectProgramConfiguration(true);
+        successWithNoErrors = statusSuccessWithNoErrors(nonAutoDetectProgram);
     }
 
     //###TestyStanu###
     @Test
     void properBatchJeansTypeFiveKgShortProgramWithSpinExpectingSuccess() {
-        LaundryBatch laundryBatch = LaundryBatch.builder()
-                .withMaterialType(Material.JEANS)
-                .withWeightKg(2)
-                .build();
-        ProgramConfiguration programConfiguration = ProgramConfiguration.builder()
-                .withProgram(Program.SHORT)
-                .withSpin(true)
-                .build();
-        LaundryStatus result = washingMashine.start(laundryBatch, programConfiguration);
-        LaundryStatus expectedResult = LaundryStatus.builder()
+        LaundryStatus result = washingMachine.start(properLaundryBatch, nonAutoDetectProgramConfigurationWithSpin);
+
+        assertEquals(successWithNoErrors, result);
+    }
+
+    private LaundryStatus statusSuccessWithNoErrors(Program programType) {
+        return LaundryStatus.builder()
                 .withResult(Result.SUCCESS)
                 .withErrorCode(ErrorCode.NO_ERROR)
-                .withRunnedProgram(Program.SHORT)
+                .withRunnedProgram(programType)
                 .build();
-        assertEquals(expectedResult, result);
+    }
+
+    private ProgramConfiguration getNonAutoDetectProgramConfiguration(boolean spin) {
+        return ProgramConfiguration.builder()
+                .withProgram(nonAutoDetectProgram)
+                .withSpin(spin)
+                .build();
+    }
+
+    private LaundryBatch properLaundryBatchCreator() {
+        return LaundryBatch.builder()
+                .withMaterialType(irrelevantMaterialType)
+                .withWeightKg(anyProperWeightInKg)
+                .build();
     }
 
 }
