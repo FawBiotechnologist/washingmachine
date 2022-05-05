@@ -3,12 +3,13 @@ package edu.iis.mto.testreactor.washingmachine;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
@@ -37,7 +38,7 @@ class WashingMachineTest {
 	private static final Percentage ABOVE_AVERAGE_DEGREE = new Percentage(50.1d);
 
 	@BeforeEach
-	void setUp() throws Exception {
+	void setUp() {
 		washingMachine = new WashingMachine(dirtDetector, engine, waterPump);
 		anyProperWeightInKg = 2d;
 		materialTypeJeans = Material.JEANS;
@@ -108,6 +109,21 @@ class WashingMachineTest {
 		LaundryStatus result = washingMachine.start(properLaundryBatch, null);
 
 		assertEquals(statusFailureUnknownError(null), result);
+	}
+
+	@Test
+	void properBatchJeansTypeFiveKgAutodetectAboveAverageDirtDegreeWithSpinExpectingProperOrderOfOperations() throws WaterPumpException, EngineException {
+		when(dirtDetector.detectDirtDegree(any())).thenReturn(ABOVE_AVERAGE_DEGREE);
+
+		LaundryStatus result = washingMachine.start(properLaundryBatch, autodetectProgramConfigurationWithSpin);
+		InOrder inOrder = Mockito.inOrder(dirtDetector, engine, waterPump);
+		inOrder.verify(dirtDetector).detectDirtDegree(properLaundryBatch);
+		inOrder.verify(waterPump).pour(anyDouble());
+		inOrder.verify(engine).runWashing(anyInt());
+		inOrder.verify(waterPump).release();
+		inOrder.verify(engine).spin();
+
+		assertEquals(statusSuccessWithNoErrors(Program.LONG), result);
 	}
 
 	private LaundryStatus statusSuccessWithNoErrors(Program programType) {
